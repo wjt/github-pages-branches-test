@@ -98,6 +98,12 @@ jobs:
           name: web
           path: build/web
 
+      - name: Upload pck file
+        uses: actions/upload-artifact@v4
+        with:
+          name: game.pck
+          path: build/web/index.pck
+
   publish:
     name: Publish to GitHub Pages
     needs:
