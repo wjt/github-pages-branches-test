@@ -64,12 +64,6 @@ jobs:
           # binary location
           ./godot --headless --verbose --path ../ --export-release "Web" ./build/web/index.html
 
-      - name: Upload pck
-        uses: actions/upload-artifact@v4
-        with:
-          name: pck
-          path: build/web/index.pck
-
       - name: Upload web build
         uses: actions/upload-artifact@v4
         with:
