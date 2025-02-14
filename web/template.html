@@ -176,17 +176,25 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 	} else {
 		setStatusMode('progress');
-		// TODO: Change options here
-		engine.startGame({
-			'onProgress': function (current, total) {
-				if (current > 0 && total > 0) {
-					statusProgress.value = current;
-					statusProgress.max = total;
-				} else {
-					statusProgress.removeAttribute('value');
-					statusProgress.removeAttribute('max');
-				}
-			},
+		const urlParams = new URLSearchParams(window.location.search);
+		const pck = urlParams.get('pck') || 'index.pck'
+
+		const engine = new Engine();
+        Promise.all([
+            engine.init("index.wasm"),
+            engine.preloadFile(pck),
+        ]).then(() => {
+            return engine.start({
+              args: ['--main-pack', pck]
+              onProgress: function (current, total) {
+						if (current > 0 && total > 0) {
+							statusProgress.value = current;
+							statusProgress.max = total;
+						} else {
+							statusProgress.removeAttribute('value');
+							statusProgress.removeAttribute('max');
+						}
+            });
 		}).then(() => {
 			setStatusMode('hidden');
 		}, displayFailureNotice);
