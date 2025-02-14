@@ -50,8 +50,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+
+      - uses: astral-sh/setup-uv@v5
 
       - uses: actions/setup-python@v5
         with:
@@ -59,7 +59,7 @@ jobs:
 
       - name: Assemble site from all live branches
         id: assemble
-        run: uv run --script godoctopus.py
+        run: uv run --frozen godoctopus.py
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
