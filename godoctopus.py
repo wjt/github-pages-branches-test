@@ -28,10 +28,6 @@ ITEM_TEMPLATE = """
 <li><a href="./{branch_dir}/">{branch}</a></li>
 """
 
-WORKFLOW_NAME = "Build and Export Game"
-ARTIFACT_NAME = "web"
-
-
 def _paginate(session, url, params=None, item_key=None):
     while True:
         response = session.get(url, params=params)
@@ -65,7 +61,7 @@ def find_artifact(session, artifacts_url, artifact_name):
             return artifact
 
 
-def find_latest_artifacts(session, repo, workflow_id):
+def find_latest_artifacts(session, repo, workflow_id, artifact_name):
     artifacts = {}
     for run in _paginate(
         session,
@@ -73,7 +69,7 @@ def find_latest_artifacts(session, repo, workflow_id):
         params={"status": "success"},
         item_key="workflow_runs",
     ):
-        artifact = find_artifact(session, run["artifacts_url"], ARTIFACT_NAME)
+        artifact = find_artifact(session, run["artifacts_url"], artifact_name)
         if not artifact or artifact["expired"]:
             continue
 
@@ -92,11 +88,21 @@ def find_latest_artifacts(session, repo, workflow_id):
     return artifacts
 
 
+def download_and_extract(session, url, dest_dir):
+    with session.get(url, stream=True) as response:
+        response.raise_for_status()
+        with tempfile.TemporaryFile() as f:
+            shutil.copyfileobj(response.raw, f)
+            zipfile.ZipFile(f).extractall(dest_dir)
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    api_token = os.environ.get("GITHUB_TOKEN")
-    repo = os.environ.get("GITHUB_REPOSITORY")
+    api_token = os.environ["GITHUB_TOKEN"]
+    repo = os.environ["GITHUB_REPOSITORY"]
+    workflow_name = os.environ["WORKFLOW_NAME"]
+    artifact_name = os.environ["ARTIFACT_NAME"]
 
     session = requests.Session()
     session.headers.update(
@@ -107,10 +113,8 @@ def main():
         }
     )
 
-    workflow = find_workflow(session, repo, WORKFLOW_NAME)
-    workflow_id = workflow["id"]
-
-    web_artifacts = find_latest_artifacts(session, repo, workflow_id)
+    workflow = find_workflow(session, repo, workflow_name)
+    web_artifacts = find_latest_artifacts(session, repo, workflow["id"], artifact_name)
 
     tmpdir = pathlib.Path(tempfile.mkdtemp(prefix="godoctopus-"))
     logging.info("Assembling site at %s", tmpdir)
@@ -119,15 +123,11 @@ def main():
     for branch, artifact in web_artifacts.items():
         url = artifact["archive_download_url"]
         logging.info("Fetching %s export from %s", branch, url)
-        with session.get(url, stream=True) as response:
-            response.raise_for_status()
-            with tempfile.TemporaryFile() as f:
-                shutil.copyfileobj(response.raw, f)
 
-                branch_quoted = urllib.parse.quote(branch)
-                branch_dir = tmpdir / branch_quoted
-                branch_dir.mkdir(parents=True)
-                zipfile.ZipFile(f).extractall(branch_dir)
+        branch_quoted = urllib.parse.quote(branch)
+        branch_dir = tmpdir / branch_quoted
+        branch_dir.mkdir(parents=True)
+        download_and_extract(session, url, branch_dir)
 
         items.append(ITEM_TEMPLATE.format(branch_dir=branch_quoted, branch=branch))
 
