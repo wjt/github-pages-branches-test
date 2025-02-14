@@ -181,7 +181,7 @@ const engine = new Engine(GODOT_CONFIG);
 
 		const engine = new Engine();
         Promise.all([
-            engine.init("index.wasm"),
+            engine.init("index"),
             engine.preloadFile(pck),
         ]).then(() => {
             return engine.start({
