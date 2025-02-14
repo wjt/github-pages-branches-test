@@ -1,9 +1,17 @@
-[gd_scene load_steps=2 format=3 uid="uid://bbs8srjcifohb"]
+[gd_scene load_steps=3 format=3 uid="uid://bbs8srjcifohb"]
 
 [ext_resource type="Texture2D" uid="uid://cnc4okptuftdy" path="res://icon.svg" id="1_4wery"]
+
+[sub_resource type="GDScript" id="GDScript_vtp44"]
+script/source = "extends Sprite2D
+
+func _process(delta: float) -> void:
+	rotation += delta
+"
 
 [node name="Main" type="Node2D"]
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 position = Vector2(573, 303)
 texture = ExtResource("1_4wery")
+script = SubResource("GDScript_vtp44")
