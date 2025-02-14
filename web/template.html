@@ -185,7 +185,7 @@ const engine = new Engine(GODOT_CONFIG);
             engine.preloadFile(pck),
         ]).then(() => {
             return engine.start({
-              args: ['--main-pack', pck]
+              args: ['--main-pack', pck],
               onProgress: function (current, total) {
 						if (current > 0 && total > 0) {
 							statusProgress.value = current;
