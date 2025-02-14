@@ -28,7 +28,68 @@ ITEM_TEMPLATE = """
 <li><a href="./{branch_dir}/">{branch}</a></li>
 """
 
+WORKFLOW_NAME = "Build and Export Game"
 ARTIFACT_NAME = "web"
+
+
+def _paginate(session, url, params=None, item_key=None):
+    while True:
+        response = session.get(url, params=params)
+        response.raise_for_status()
+        j = response.json()
+        if item_key:
+            yield from j[item_key]
+        else:
+            yield from j
+        if not response.links.get("next"):
+            break
+        url = response.links["next"]["url"]
+        params = None
+
+
+def find_workflow(session, repo, workflow_name):
+    for workflow in _paginate(
+        session,
+        f"https://api.github.com/repos/{repo}/actions/workflows",
+        item_key="workflows",
+    ):
+        if workflow["name"] == workflow_name:
+            return workflow
+
+    raise ValueError(f"Workflow '{workflow_name}' not found")
+
+
+def find_artifact(session, artifacts_url, artifact_name):
+    for artifact in _paginate(session, artifacts_url, item_key="artifacts"):
+        if artifact["name"] == artifact_name:
+            return artifact
+
+
+def find_latest_artifacts(session, repo, workflow_id):
+    artifacts = {}
+    for run in _paginate(
+        session,
+        f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_id}/runs",
+        params={"status": "success"},
+        item_key="workflow_runs",
+    ):
+        artifact = find_artifact(session, run["artifacts_url"], ARTIFACT_NAME)
+        if not artifact or artifact["expired"]:
+            continue
+
+        if run["head_repository"]["full_name"] == repo:
+            owner_label = "_"
+        else:
+            owner_label = run["head_repository"]["owner"]["login"]
+
+        branch = run["head_branch"]
+        key = f"{owner_label}/{branch}"
+
+        # Assumes response is sorted, newest to oldest
+        if key not in artifacts:
+            artifacts[key] = artifact
+
+    return artifacts
 
 
 def main():
@@ -46,41 +107,17 @@ def main():
         }
     )
 
-    response = session.get(
-        f"https://api.github.com/repos/{repo}/actions/artifacts",
-        params={
-            "name": ARTIFACT_NAME,
-            "per_page": 100,
-        },
-    )
-    response.raise_for_status()
+    workflow = find_workflow(session, repo, WORKFLOW_NAME)
+    workflow_id = workflow["id"]
 
-    web_artifacts = {}
-    # TODO: pagination in case of >100
-    # TODO: sanitize branch names?
-    for artifact in response.json()["artifacts"]:
-        if (
-            artifact["workflow_run"]["repository_id"]
-            != artifact["workflow_run"]["head_repository_id"]
-        ):
-            # TODO: external PRs
-            continue
-
-        if artifact["expired"]:
-            continue
-
-        head_branch = artifact["workflow_run"]["head_branch"]
-
-        # Assumes response is sorted, newest to oldest
-        if head_branch not in web_artifacts:
-            web_artifacts[head_branch] = artifact
+    web_artifacts = find_latest_artifacts(session, repo, workflow_id)
 
     tmpdir = pathlib.Path(tempfile.mkdtemp(prefix="godoctopus-"))
     logging.info("Assembling site at %s", tmpdir)
 
     items = []
-    for branch in web_artifacts:
-        url = web_artifacts[branch]["archive_download_url"]
+    for branch, artifact in web_artifacts.items():
+        url = artifact["archive_download_url"]
         logging.info("Fetching %s export from %s", branch, url)
         with session.get(url, stream=True) as response:
             response.raise_for_status()
@@ -89,7 +126,7 @@ def main():
 
                 branch_quoted = urllib.parse.quote(branch)
                 branch_dir = tmpdir / branch_quoted
-                branch_dir.mkdir()
+                branch_dir.mkdir(parents=True)
                 zipfile.ZipFile(f).extractall(branch_dir)
 
         items.append(ITEM_TEMPLATE.format(branch_dir=branch_quoted, branch=branch))
