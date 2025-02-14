@@ -43,7 +43,7 @@ jobs:
       enabled: ${{ steps.check.outputs.enabled }}
 
   publish:
-    name: Assemble Pages Artifact
+    name: Publish all branches to GitHub Pages
     needs:
       - check
     if: ${{ needs.check.outputs.enabled }}
@@ -57,7 +57,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Assemble artifact
+      - name: Assemble site from all live branches
         id: assemble
         run: uv run --script godoctopus.py
         env:
@@ -68,3 +68,6 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ steps.assemble.outputs.path }}
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
