@@ -18,7 +18,9 @@ runs:
 
     - name: Assemble site from all live branches
       id: assemble
-      run: uv run --project ${{ github.action_path }} --frozen ${{ github.action_path }}/godoctopus.py
+      shell: bash
+      run: |
+        uv run --project ${{ github.action_path }} --frozen ${{ github.action_path }}/godoctopus.py
       env:
         GITHUB_TOKEN: ${{ github.token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
