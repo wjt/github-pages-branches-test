@@ -49,25 +49,7 @@ jobs:
     if: ${{ needs.check.outputs.enabled }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v5
-
-      - uses: actions/setup-python@v5
+      - uses: .
         with:
-          python-version: '3.11'
-
-      - name: Assemble site from all live branches
-        id: assemble
-        run: uv run --frozen godoctopus.py
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-
-      - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ${{ steps.assemble.outputs.path }}
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+          workflow_name: "Build and Export Game"
+          artifact_name: "web"

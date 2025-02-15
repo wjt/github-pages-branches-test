@@ -1,7 +1,8 @@
 [project]
-name = "godoctopus"
+name = "amalgamate-pages-artifacts"
 version = "0.1.0"
 description = "Amalgamate many branches into one GitHub Pages site"
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
