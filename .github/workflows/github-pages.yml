@@ -49,7 +49,7 @@ jobs:
     if: ${{ needs.check.outputs.enabled }}
     runs-on: ubuntu-latest
     steps:
-      - uses: .
+      - uses: ./action.yml
         with:
           workflow_name: "Build and Export Game"
           artifact_name: "web"
