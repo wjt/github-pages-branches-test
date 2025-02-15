@@ -20,7 +20,8 @@ runs:
       id: assemble
       shell: bash
       run: |
-        uv run --project ${{ github.action_path }} --frozen ${{ github.action_path }}/godoctopus.py
+        cd ${{ github.action_path }}
+        uv run --frozen godoctopus.py
       env:
         GITHUB_TOKEN: ${{ github.token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
