@@ -6,5 +6,6 @@ license = "MIT"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "jinja2>=3.1.5",
     "requests>=2.28.1",
 ]

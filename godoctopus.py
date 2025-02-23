@@ -8,25 +8,8 @@ import shutil
 import pathlib
 import logging
 import urllib.parse
+import jinja2
 
-INDEX_TEMPLATE = """
-<!doctype html>
-<html lang=en>
-<head>
-<meta charset=utf-8>
-<title>{title}</title>
-</head>
-<body>
-<ul>
-{items}
-</ul>
-</body>
-</html>
-"""
-
-ITEM_TEMPLATE = """
-<li><a href="./{branch_dir}/">{branch}</a></li>
-"""
 
 def _paginate(session, url, params=None, item_key=None):
     while True:
@@ -146,15 +129,15 @@ def main():
         branch_dir.mkdir(parents=True)
         download_and_extract(session, url, branch_dir)
 
-        items.append(ITEM_TEMPLATE.format(branch_dir=branch_quoted, branch=branch))
+        items.append({"dir": branch_quoted, "name": branch})
 
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+        autoescape=jinja2.select_autoescape(),
+    )
+    template = env.get_template("branches.html")
     with open(branches_dir / "index.html", "w") as f:
-        f.write(
-            INDEX_TEMPLATE.format(
-                title="Branches",
-                items="".join(items),
-            )
-        )
+        template.stream(title="Branches", branches=items).dump(f)
 
     github_output = os.environ.get("GITHUB_OUTPUT")
     if github_output:
