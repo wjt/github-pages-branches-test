@@ -26,10 +26,10 @@ def _paginate(session, url, params=None, item_key=None):
         params = None
 
 
-def get_default_branch(session, repo):
+def get_repo_details(session, repo):
     response = session.get(f"https://api.github.com/repos/{repo}")
     response.raise_for_status()
-    return response.json()["default_branch"]
+    return response.json()
 
 
 def find_workflow(session, repo, workflow_name):
@@ -62,11 +62,7 @@ def find_latest_artifacts(session, repo, workflow_id, artifact_name):
         if not artifact or artifact["expired"]:
             continue
 
-        if run["head_repository"]["full_name"] == repo:
-            owner_label = "_"
-        else:
-            owner_label = run["head_repository"]["owner"]["login"]
-
+        owner_label = run["head_repository"]["owner"]["login"]
         branch = run["head_branch"]
         key = f"{owner_label}/{branch}"
 
@@ -102,8 +98,8 @@ def main():
         }
     )
 
-    # Get default branch for repo using GitHub api_token
-    default_branch = get_default_branch(session, repo)
+    repo_details = get_repo_details(session, repo)
+    default_branch = "/".join((repo_details['owner']['login'], repo_details["default_branch"]))
     workflow = find_workflow(session, repo, workflow_name)
     web_artifacts = find_latest_artifacts(session, repo, workflow["id"], artifact_name)
 
@@ -111,7 +107,7 @@ def main():
     logging.info("Assembling site at %s", tmpdir)
 
     # Place default branch content at root of site
-    artifact = web_artifacts.pop(f"_/{default_branch}")
+    artifact = web_artifacts.pop(default_branch)
     url = artifact["archive_download_url"]
     logging.info("Fetching %s export from %s", default_branch, url)
     download_and_extract(session, url, tmpdir)
