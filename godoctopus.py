@@ -43,6 +43,12 @@ def _paginate(session, url, params=None, item_key=None):
         params = None
 
 
+def get_default_branch(session, repo):
+    response = session.get(f"https://api.github.com/repos/{repo}")
+    response.raise_for_status()
+    return response.json()["default_branch"]
+
+
 def find_workflow(session, repo, workflow_name):
     for workflow in _paginate(
         session,
@@ -113,25 +119,36 @@ def main():
         }
     )
 
+    # Get default branch for repo using GitHub api_token
+    default_branch = get_default_branch(session, repo)
     workflow = find_workflow(session, repo, workflow_name)
     web_artifacts = find_latest_artifacts(session, repo, workflow["id"], artifact_name)
 
     tmpdir = pathlib.Path(tempfile.mkdtemp(prefix="godoctopus-"))
     logging.info("Assembling site at %s", tmpdir)
 
+    # Place default branch content at root of site
+    artifact = web_artifacts.pop(f"_/{default_branch}")
+    url = artifact["archive_download_url"]
+    logging.info("Fetching %s export from %s", default_branch, url)
+    download_and_extract(session, url, tmpdir)
+
     items = []
+    branches_dir = tmpdir / "branches"
+    branches_dir.mkdir()
+
     for branch, artifact in web_artifacts.items():
         url = artifact["archive_download_url"]
         logging.info("Fetching %s export from %s", branch, url)
 
         branch_quoted = urllib.parse.quote(branch)
-        branch_dir = tmpdir / branch_quoted
+        branch_dir = branches_dir / branch_quoted
         branch_dir.mkdir(parents=True)
         download_and_extract(session, url, branch_dir)
 
         items.append(ITEM_TEMPLATE.format(branch_dir=branch_quoted, branch=branch))
 
-    with open(tmpdir / "index.html", "w") as f:
+    with open(branches_dir / "index.html", "w") as f:
         f.write(
             INDEX_TEMPLATE.format(
                 title="Branches",
