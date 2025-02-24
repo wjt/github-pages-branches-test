@@ -68,6 +68,11 @@ def find_latest_artifacts(session, repo, workflow_id, artifact_name):
 
         # Assumes response is sorted, newest to oldest
         if key not in artifacts:
+            # TODO: You might hope that you could fetch
+            # https://api.github.com/repos/{repo}/actions/runs/{artifact['workflow_run']['id']}
+            # and inspect the pull_requests property to find the corresponding PR for each branch.
+            # But as discussed at # https://github.com/orgs/community/discussions/25220 that
+            # property is always empty for builds from forks.
             artifacts[key] = artifact
 
     return artifacts
