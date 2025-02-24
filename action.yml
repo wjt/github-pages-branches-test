@@ -1,5 +1,5 @@
-name: Amalgamate Pages Artifacts
-description: Amalgamate many branches into one GitHub Pages site
+name: Amalgamate Pages
+description: Amalgamate builds from many branches into one GitHub Pages site
 inputs:
   workflow_name:
     description: Name of the workflow that produces artifacts for each branch
