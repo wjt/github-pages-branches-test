@@ -52,12 +52,7 @@ jobs:
     # if: ${{ needs.check.outputs.enabled }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - run: |
-          ls
-
-      - uses: ./
+      - uses: endlessm/amalgamate-pages@107166355ee90e75b46d3d5a993563057ab14f8a
         with:
           workflow_name: "Build and Export Game"
           artifact_name: "web"
