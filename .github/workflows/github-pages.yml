@@ -1,8 +1,5 @@
 name: "Publish to GitHub Pages"
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
   workflow_run:
     workflows:
@@ -19,9 +16,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-
-env:
-  GODOT_VERSION: 4.3
 
 jobs:
   #check:
